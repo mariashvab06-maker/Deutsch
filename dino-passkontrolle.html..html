@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dino Passkontrolle</title>
+<style>
+:root{--bg:#f4fbfa;--card:#fff;--text:#16302f;--muted:#5b7573;--teal:#14877f;--teal-l:#d6f0ed;--orange:#f28c28;--orange-l:#ffeacc;--line:#cfe5e2;--ok:#2e9e4f;--ok-l:#d9f4e0;--bad:#d64545;--bad-l:#fde0e0}
+@media (prefers-color-scheme:dark){:root{--bg:#10201f;--card:#183230;--text:#e8f5f3;--muted:#9bbab6;--teal:#3fc2b8;--teal-l:#1f4642;--orange:#ffa74d;--orange-l:#4a3418;--line:#2b504c;--ok:#5fd183;--ok-l:#1d4a2c;--bad:#ff7a7a;--bad-l:#5a2525}}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.45}
+.wrap{max-width:760px;margin:0 auto;padding:16px 14px 50px}
+h1{margin:0;font-size:1.8rem;color:var(--teal)}
+.sub{color:var(--muted);margin:2px 0 14px}
+.card{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+.btn{background:var(--orange);color:#fff;border:0;border-radius:12px;padding:12px 18px;font:inherit;font-weight:700;cursor:pointer;margin:8px 8px 0 0}
+.btn.alt{background:var(--teal)}
+.btn.ghost{background:var(--teal-l);color:var(--text)}
+.btn:active{transform:scale(.97)}
+.lv{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:var(--teal-l);border:2px solid var(--teal);border-radius:14px;padding:12px 14px;margin-bottom:10px;font:inherit;color:var(--text);cursor:pointer}
+.lv .n{font-size:2.2rem}
+.lv b{display:block;font-size:1.1rem}
+.lv small{color:var(--muted)}
+.lv .best{margin-left:auto;white-space:nowrap}
+.bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:700;flex-wrap:wrap;gap:6px}
+.pill{background:var(--orange-l);border-radius:20px;padding:3px 12px}
+.scene{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.who{text-align:center;min-width:110px}
+.who .big{font-size:4rem;line-height:1.1}
+.who .nm{font-weight:800}
+.pass{flex:1;min-width:230px;background:var(--orange-l);border:3px solid var(--orange);border-radius:14px;padding:10px 12px;position:relative}
+.pass h3{margin:0 0 6px;font-size:.95rem;letter-spacing:1px;color:var(--orange)}
+.row{display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px dashed var(--orange);font-size:1.05rem}
+.row:last-child{border:0}
+.row span:first-child{color:var(--muted);font-weight:600}
+.row b.q{color:var(--orange)}
+.stamp{position:absolute;right:10px;bottom:8px;border:4px solid var(--ok);color:var(--ok);border-radius:10px;padding:2px 10px;font-weight:900;font-size:1.3rem;transform:rotate(-12deg);background:var(--card)}
+.bubble{background:var(--teal-l);border:2px solid var(--teal);border-radius:14px;padding:10px 14px;margin:12px 0;font-size:1.3rem;font-weight:700;min-height:3.2rem}
+.bubble small{display:block;color:var(--muted);font-weight:400;font-size:.85rem}
+.qs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qb{font:inherit;font-weight:700;font-size:1.1rem;padding:12px;border-radius:12px;border:2px solid var(--teal);background:var(--card);color:var(--text);cursor:pointer}
+.qb.done{background:var(--ok-l);border-color:var(--ok)}
+.opts{display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px}
+.opt{font:inherit;font-size:1.15rem;font-weight:700;padding:13px;border-radius:12px;border:2px solid var(--teal);background:var(--teal-l);color:var(--text);cursor:pointer}
+.opt:disabled{cursor:default}
+.opt.ok{background:var(--ok-l);border-color:var(--ok)}
+.opt.bad{background:var(--bad-l);border-color:var(--bad)}
+.pairs{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.pc{font:inherit;font-weight:700;font-size:1.05rem;padding:12px 8px;border-radius:12px;border:2px solid var(--teal);background:var(--teal-l);color:var(--text);cursor:pointer;min-height:56px}
+.pc.a{border-color:var(--orange);background:var(--orange-l)}
+.pc.sel{outline:4px solid var(--orange);transform:scale(1.03)}
+.pc.ok{background:var(--ok-l);border-color:var(--ok);cursor:default}
+.pc.bad{animation:sh .4s;background:var(--bad-l);border-color:var(--bad)}
+@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.center{text-align:center}
+.stars{font-size:3rem}
+.hint{color:var(--muted);font-size:.93rem;margin:0 0 8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Dino Passkontrolle 🦖🛂</h1>
+  <p class="sub">Wer? Was? Woher? Wie?</p>
+  <div id="app"></div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+function sayAll(arr){try{speechSynthesis.cancel();arr.forEach(t=>{const u=new SpeechSynthesisUtterance(t);u.lang="de-DE";u.rate=.8;speechSynthesis.speak(u)})}catch(e){}}
+
+const NUM={8:"acht",9:"neun",10:"zehn",11:"elf"};
+const T=[
+ {n:"Max",e:"👦",age:10,land:"Deutschland",lk:"aus Deutschland",comp:"meine Oma",ce:"👵",item:"ein Fahrrad",ie:"🚲"},
+ {n:"Anna",e:"👧",age:9,land:"Ukraine",lk:"aus der Ukraine",comp:"mein Bruder",ce:"👦",item:"ein Rucksack",ie:"🎒"},
+ {n:"Nico",e:"🧒",age:8,land:"Polen",lk:"aus Polen",comp:"mein Hund",ce:"🐶",item:"eine Gitarre",ie:"🎸"},
+ {n:"Lena",e:"👱‍♀️",age:11,land:"Österreich",lk:"aus Österreich",comp:"meine Freundin",ce:"👭",item:"ein Surfbrett",ie:"🏄"}
+];
+const QS=[
+ {k:"name",q:"Wie heißt du?",lab:"Name",val:t=>t.n,ans:t=>`Ich heiße ${t.n}.`},
+ {k:"age",q:"Wie alt bist du?",lab:"Alter",val:t=>NUM[t.age]+" Jahre",ans:t=>`Ich bin ${NUM[t.age]} Jahre alt.`},
+ {k:"land",q:"Woher kommst du?",lab:"Land",val:t=>t.land,ans:t=>`Ich komme ${t.lk}.`},
+ {k:"comp",q:"Wer ist das?",lab:"Wer?",val:t=>t.ce+" "+t.comp,ans:t=>`Das ist ${t.comp}.`},
+ {k:"item",q:"Was ist das?",lab:"Was?",val:t=>t.ie+" "+t.item,ans:t=>`Das ist ${t.item}.`}
+];
+const PAIRS=[
+ ["Wie heißt du?","Ich heiße Nico."],["Wie alt bist du?","Ich bin neun Jahre alt."],
+ ["Woher kommst du?","Ich komme aus Polen."],["Wer ist das?","Das ist Anna."],
+ ["Was ist das?","Das ist ein Fahrrad."],["Wie geht es dir?","Super!"],
+ ["Wer bist du?","Ich bin Max."],["Woher kommt Lena?","Sie kommt aus Österreich."],
+ ["Wie alt ist Max?","Er ist zehn Jahre alt."]
+];
+let best=[0,0,0],G=null;
+const stars=(p)=>p>=.9?3:p>=.6?2:1;
+
+function menu(){
+  G=null;
+  $("#app").innerHTML=`<div class="card">Hallo! Ich bin Dino 🦖. Wer kommt über die Grenze? Обери гру:</div>
+  <button class="lv" data-g="1"><span class="n">🛂</span><span><b>Du bist Grenzbeamter</b><small>Для двох: один перекладає українські питання, другий відповідає за паспортом</small></span><span class="best">${"⭐".repeat(best[0])}</span></button>
+  <button class="lv" data-g="2"><span class="n">🎒</span><span><b>Du bist der Reisende</b><small>Dino питає — ти відповідаєш за героя</small></span><span class="best">${"⭐".repeat(best[1])}</span></button>
+  <button class="lv" data-g="3"><span class="n">🃏</span><span><b>Finde das Paar</b><small>З'єднай питання з відповіддю</small></span><span class="best">${"⭐".repeat(best[2])}</span></button>`;
+  document.querySelectorAll(".lv").forEach(b=>b.onclick=()=>[0,g1,g2,g3][+b.dataset.g]());
+}
+
+const ALL=new Set(QS.map(x=>x.k));
+const UK={name:"Як тебе звати?",age:"Скільки тобі років?",land:"Звідки ти?",comp:"Хто це?",item:"Що це?"};
+function passport(t,show,stamp,done){
+  return `<div class="pass"><h3>REISEPASS · ПАСПОРТ</h3>`+
+   QS.map(x=>`<div class="row"><span>${x.lab}${done&&done.has(x.k)?" ✅":""}</span>${show.has(x.k)?`<b>${x.val(t)}</b>`:`<b class="q">❓</b>`}</div>`).join("")+
+   (stamp?`<div class="stamp">✅ WILLKOMMEN</div>`:"")+`</div>`;
+}
+
+/* ---------- Game 1: Grenzbeamter (UA -> DE) ---------- */
+function g1(){G={list:shuffle(T),i:0};r1()}
+function r1(){
+  const t=G.list[G.i];G.asked=new Set();G.stamped=false;
+  $("#app").innerHTML=`<div class="bar"><button class="btn ghost" style="margin:0" id="home">← Menü</button><span class="pill">Reisender ${G.i+1}/${T.length}</span></div>
+  <div class="card"><p class="hint">Гра для двох. <b>Grenzbeamter 🛂</b> обирає українське питання і каже його німецькою. <b>Reisender ${t.e}</b> відповідає за даними з паспорта.</p>
+  <div class="scene"><div class="who"><div class="big">${t.e}</div><div class="nm">${t.n}</div></div><div id="ps">${passport(t,ALL,false,G.asked)}</div></div>
+  <div class="bubble" id="bb">🦖 Guten Tag! Ihren Pass, bitte!</div>
+  <div class="qs">${QS.map(x=>`<button class="qb" data-k="${x.k}">${UK[x.k]}</button>`).join("")}</div>
+  <div class="center" id="ac"></div><div class="center" id="nx"></div></div>`;
+  $("#home").onclick=menu;
+  document.querySelectorAll(".qb").forEach(b=>b.onclick=()=>ask(t,b));
+}
+function ask(t,b){
+  if(G.stamped)return;
+  const x=QS.find(z=>z.k===b.dataset.k);
+  $("#bb").innerHTML=`🗣️ ${UK[x.k]}<small>Скажи це німецькою!</small>`;
+  $("#ac").innerHTML=`<button class="btn alt" id="c1">👀 Frage prüfen</button>`;
+  $("#c1").onclick=()=>{
+    $("#bb").innerHTML=`🛂 ${x.q}<small>Тепер Reisender відповідає за паспортом</small>`;
+    sayAll([x.q]);
+    $("#ac").innerHTML=`<button class="btn alt" id="c2">💬 Antwort prüfen</button>`;
+    $("#c2").onclick=()=>{
+      G.asked.add(x.k);b.classList.add("done");
+      $("#bb").innerHTML=`${t.e} ${x.ans(t)}<small>${x.q}</small>`;
+      sayAll([x.ans(t)]);
+      $("#ps").innerHTML=passport(t,ALL,false,G.asked);
+      $("#ac").innerHTML="";
+      if(G.asked.size===QS.length)$("#nx").innerHTML=`<button class="btn" id="st">🛂 Stempeln!</button>`,$("#st").onclick=()=>stamp(t);
+    };
+  };
+}
+function stamp(t){
+  G.stamped=true;
+  $("#ps").innerHTML=passport(t,ALL,true,G.asked);
+  $("#bb").innerHTML=`🦖 Willkommen, ${t.n}!`;sayAll(["Willkommen, "+t.n+"!"]);
+  const last=G.i+1>=T.length;
+  $("#nx").innerHTML=`<button class="btn" id="go">${last?"Fertig 🎉":"Nächster Reisender ➜"}</button>`;
+  $("#go").onclick=()=>{if(last){best[0]=3;fin("Die Grenze ist offen! 🎉",3,null)}else{G.i++;r1()}};
+}
+
+/* ---------- Game 2: Reisender ---------- */
+function g2(){G={list:shuffle(T).slice(0,2),r:0,k:0,score:0,ok:0,total:10};r2()}
+function r2(){
+  const t=G.list[G.r];
+  if(G.k===0)G.order=shuffle(QS);
+  const x=G.order[G.k];
+  const others=shuffle(T.filter(o=>o!==t)).slice(0,2).map(o=>x.ans(o));
+  const opts=shuffle([x.ans(t),...others]);
+  const all=new Set(QS.map(z=>z.k));
+  $("#app").innerHTML=`<div class="bar"><button class="btn ghost" style="margin:0" id="home">← Menü</button><span class="pill">${G.r*5+G.k+1}/${G.total}</span><span class="pill">⭐ ${G.score}</span></div>
+  <div class="card"><p class="hint">Ти — ${t.n}! Подивись на свій паспорт і відповідай Dino.</p>
+  <div class="scene"><div class="who"><div class="big">${t.e}</div><div class="nm">${t.n}</div></div>${passport(t,all)}</div>
+  <div class="bubble">🦖 ${x.q}</div>
+  <div class="opts">${opts.map(o=>`<button class="opt">${o}</button>`).join("")}</div>
+  <div class="center" id="nx"></div></div>`;
+  $("#home").onclick=menu;
+  sayAll([x.q]);
+  let done=false;
+  document.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+    if(done)return;done=true;
+    const ok=b.textContent===x.ans(t);
+    document.querySelectorAll(".opt").forEach(z=>{z.disabled=true;if(z.textContent===x.ans(t))z.classList.add("ok");else if(z===b)z.classList.add("bad")});
+    if(ok){G.score+=10;G.ok++}
+    sayAll([x.ans(t)]);
+    const adv=()=>{G.k++;if(G.k>=5){G.k=0;G.r++}if(G.r>=2)fin("Passkontrolle geschafft!",stars(G.ok/G.total),1);else r2()};
+    if(ok)setTimeout(adv,1500);
+    else{$("#nx").innerHTML=`<button class="btn" id="go">Weiter ➜</button>`;$("#go").onclick=adv}
+  });
+}
+
+/* ---------- Game 3: Finde das Paar ---------- */
+function g3(){
+  G={ps:shuffle(PAIRS).slice(0,6),left:null,matched:0,err:0};
+  const L=shuffle(G.ps.map((p,i)=>[i,p[0]])),R=shuffle(G.ps.map((p,i)=>[i,p[1]]));
+  $("#app").innerHTML=`<div class="bar"><button class="btn ghost" style="margin:0" id="home">← Menü</button><span class="pill" id="er">Fehler: 0</span></div>
+  <div class="card"><p class="hint">Клікни питання, а потім відповідь до нього.</p>
+  <div class="pairs">${L.map((l,k)=>`<button class="pc" data-s="l" data-i="${l[0]}">${l[1]}</button><button class="pc a" data-s="r" data-i="${R[k][0]}">${R[k][1]}</button>`).join("")}</div></div>`;
+  $("#home").onclick=menu;
+  document.querySelectorAll(".pc").forEach(b=>b.onclick=()=>pc(b));
+}
+function pc(b){
+  if(b.classList.contains("ok"))return;
+  sayAll([b.textContent]);
+  if(b.dataset.s==="l"){
+    document.querySelectorAll('.pc[data-s="l"]').forEach(x=>x.classList.remove("sel"));
+    b.classList.add("sel");G.left=b;return;
+  }
+  if(!G.left)return;
+  const l=G.left;
+  if(l.dataset.i===b.dataset.i){
+    l.classList.remove("sel");l.classList.add("ok");b.classList.add("ok");G.left=null;G.matched++;
+    if(G.matched===G.ps.length)setTimeout(()=>fin("Alle Paare gefunden!",G.err<=1?3:G.err<=3?2:1,2),700);
+  }else{
+    G.err++;$("#er").textContent="Fehler: "+G.err;
+    b.classList.add("bad");setTimeout(()=>b.classList.remove("bad"),450);
+  }
+}
+
+function fin(msg,st,idx){
+  if(idx!==null)best[idx]=Math.max(best[idx],st);
+  $("#app").innerHTML=`<div class="card center"><div class="stars">${"⭐".repeat(st)+"☆".repeat(3-st)}</div>
+  <h2>${msg}</h2><div style="font-size:3rem">🦖</div>
+  <button class="btn" id="m">Menü</button></div>`;
+  $("#m").onclick=menu;
+}
+menu();
+</script>
+</body>
+</html>
